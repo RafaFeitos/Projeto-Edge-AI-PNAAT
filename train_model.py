@@ -17,9 +17,33 @@ def load_and_preprocess_data():
 
     return (x_train, y_train), (x_test, y_test)
 
+def build_model():
+    """Arquitetura CNN simples para classificação de dígitos manuscritos."""
+    model = keras.Sequential([
+        # Bloco 1 — extração de features de baixo nível:
+        keras.layers.Conv2D(32, (3, 3), activation="relu", input_shape=(28, 28, 1)),
+        keras.layers.MaxPooling2D((2, 2)),
 
+        # Bloco 2 — extração de features de médio nível:
+        keras.layers.Conv2D(64, (3, 3), activation="relu"),
+        keras.layers.MaxPooling2D((2, 2)),
+
+        # Classificador:
+        keras.layers.Flatten(),
+        keras.layers.Dense(64, activation="relu"),
+        keras.layers.Dense(10, activation="softmax"),
+    ])
+
+    model.compile(
+        optimizer="adam",
+        loss="sparse_categorical_crossentropy",
+        metrics=["accuracy"],
+    )
+
+    return model
+
+# nova main com base na construção model:
 if __name__ == "__main__":
     (x_train, y_train), (x_test, y_test) = load_and_preprocess_data()
-    print(f"Train samples : {x_train.shape[0]}")
-    print(f"Test  samples : {x_test.shape[0]}")
-    print(f"Input shape   : {x_train.shape[1:]}")
+    model = build_model()
+    model.summary()
