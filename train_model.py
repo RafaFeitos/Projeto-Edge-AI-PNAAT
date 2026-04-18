@@ -57,8 +57,9 @@ def train_model(model, x_train, y_train, x_test, y_test):
 
     return history
 
-
 if __name__ == "__main__":
     (x_train, y_train), (x_test, y_test) = load_and_preprocess_data()
     model = build_model()
     train_model(model, x_train, y_train, x_test, y_test)
+    model.save("model.h5")
+    print("Modelo salvo em model.h5")
