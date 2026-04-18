@@ -6,14 +6,12 @@ os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
 
 
 def load_model(model_path: str) -> tf.keras.Model:
-    """Carrega o modelo Keras treinado a partir do arquivo .h5."""
     model = tf.keras.models.load_model(model_path)
     print(f"Modelo carregado: {model_path}")
     return model
 
 
 def convert_to_tflite(model: tf.keras.Model) -> bytes:
-    """Converte o modelo Keras para o formato TensorFlow Lite."""
     converter = tf.lite.TFLiteConverter.from_keras_model(model)
     tflite_model = converter.convert()
     print("Conversão para TFLite concluída.")

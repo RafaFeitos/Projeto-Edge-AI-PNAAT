@@ -1,14 +1,12 @@
 import os
 import tensorflow as tf
 from tensorflow import keras
-# from tensorflow.keras import layers
 
 # Suprimir os logs de informações/avisos do TensorFlow para uma saída de CI mais limpa:
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
 
 
 def load_and_preprocess_data():
-    """Carregamento (reshape) e aplicação da normalização do dataset MNIST"""
     (x_train, y_train), (x_test, y_test) = keras.datasets.mnist.load_data()
 
     # Redimensionar para (amostras, altura, largura, canais), necessário para Conv2D:
@@ -18,7 +16,6 @@ def load_and_preprocess_data():
     return (x_train, y_train), (x_test, y_test)
 
 def build_model():
-    """Arquitetura CNN simples para classificação de dígitos manuscritos."""
     model = keras.Sequential([
         # Bloco 1 — extração de features de baixo nível:
         keras.layers.Conv2D(32, (3, 3), activation="relu", input_shape=(28, 28, 1)),
@@ -43,7 +40,6 @@ def build_model():
     return model
 
 def train_model(model, x_train, y_train, x_test, y_test):
-    """Treinamento do modelo com validação no conjunto de teste."""
     history = model.fit(
         x_train, y_train,
         epochs=5,
