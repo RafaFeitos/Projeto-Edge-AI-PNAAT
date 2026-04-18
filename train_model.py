@@ -42,8 +42,23 @@ def build_model():
 
     return model
 
-# nova main com base na construção model:
+def train_model(model, x_train, y_train, x_test, y_test):
+    """Treinamento do modelo com validação no conjunto de teste."""
+    history = model.fit(
+        x_train, y_train,
+        epochs=5,
+        batch_size=64,
+        validation_data=(x_test, y_test),
+        verbose=1,
+    )
+
+    _, accuracy = model.evaluate(x_test, y_test, verbose=0)
+    print(f"\nAcurácia final no conjunto de teste: {accuracy:.4f}")
+
+    return history
+
+
 if __name__ == "__main__":
     (x_train, y_train), (x_test, y_test) = load_and_preprocess_data()
     model = build_model()
-    model.summary()
+    train_model(model, x_train, y_train, x_test, y_test)
