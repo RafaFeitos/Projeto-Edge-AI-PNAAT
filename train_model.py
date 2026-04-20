@@ -2,14 +2,15 @@ import os
 import tensorflow as tf
 from tensorflow import keras
 
-# Suprimir os logs de informações/avisos do TensorFlow para uma saída de CI mais limpa:
+# Reduz logs do TensorFlow no CI
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
 
+tf.random.set_seed(42)  # Para reprodutibilidade.
 
 def load_and_preprocess_data():
     (x_train, y_train), (x_test, y_test) = keras.datasets.mnist.load_data()
 
-    # Redimensionar para (amostras, altura, largura, canais), necessário para Conv2D:
+    # Adiciona o canal para compatibilidade com a CNN
     x_train = x_train.reshape(-1, 28, 28, 1).astype("float32") / 255.0
     x_test = x_test.reshape(-1, 28, 28, 1).astype("float32") / 255.0
 
@@ -17,15 +18,14 @@ def load_and_preprocess_data():
 
 def build_model():
     model = keras.Sequential([
-        # Bloco 1 — extração de features de baixo nível:
+        # Bloco 1 — extração de features de baixo nível
         keras.layers.Conv2D(32, (3, 3), activation="relu", input_shape=(28, 28, 1)),
         keras.layers.MaxPooling2D((2, 2)),
 
-        # Bloco 2 — extração de features de médio nível:
+        # Bloco 2 — extração de features de médio nível
         keras.layers.Conv2D(64, (3, 3), activation="relu"),
         keras.layers.MaxPooling2D((2, 2)),
 
-        # Classificador:
         keras.layers.Flatten(),
         keras.layers.Dense(64, activation="relu"),
         keras.layers.Dense(10, activation="softmax"),
