@@ -300,55 +300,116 @@ Copie o link do seu repositório e envie conforme orientações do processo sele
 
 ## 📝 Relatório do Candidato
 
-O arquivo (`README.md`) deve ser utilizado como **relatório final do desafio**.
+👤 **Nome Completo:** Rafael Silva Arraes Feitosa
 
-Preencha todas as seções de forma clara e objetiva.
+---
 
-> 💡 Dica: não é necessário um relatório extenso.  
-> O mais importante é demonstrar **clareza nas decisões técnicas**.
+### ▶️ Como Executar
 
+Execute os scripts nesta ordem a partir da raiz do repositório:
 
+```bash
+# 1. Treinamento — gera model.h5
+python train_model.py
 
-**Exemplo:**
+# 2. Otimização — gera model.tflite e model_float16.tflite
+python optimize_model.py
+```
 
-👤 Identificação: **Nome Completo:**
-
+---
 
 ### 1️⃣ Resumo da Arquitetura do Modelo
 
-Descreva, em palavras, a arquitetura da **CNN** implementada no arquivo
-`train_model.py`.
+A CNN implementada em `train_model.py` tem dois blocos convolucionais seguidos de um classificador denso, projetada para ser simples e compatível com execução em dispositivos embarcados.
 
+| Camada | Tipo | Configuração | Motivo |
+|--------|------|-------------|--------|
+| 1 | Conv2D | 32 filtros 3×3, ReLU | Identifica características básicas dos dígitos — bordas e traços |
+| 2 | MaxPooling2D | 2×2 | Reduz dimensionalidade pela metade, mantendo as features relevantes |
+| 3 | Conv2D | 64 filtros 3×3, ReLU | Identifica formas mais complexas combinando as features anteriores |
+| 4 | MaxPooling2D | 2×2 | Segunda redução — tensor chega ao classificador com 5×5×64 valores |
+| 5 | Flatten | — | Converte o tensor 3D em vetor 1D para entrada no classificador |
+| 6 | Dense | 64 neurônios, ReLU | Aprende relações globais entre as features extraídas |
+| 7 | Dense | 10 neurônios, Softmax | Uma probabilidade por dígito (0–9) |
 
+**Total de parâmetros treináveis: 121.930**
+
+A arquitetura usa 2 blocos Conv+Pool em vez de 3 porque o MNIST é um dataset relativamente simples — imagens 28×28 em escala de cinza com padrões regulares. Um terceiro bloco adicionaria custo computacional sem ganho real de acurácia nesse contexto.
+
+---
 
 ### 2️⃣ Bibliotecas Utilizadas
 
-Liste as principais bibliotecas utilizadas no projeto, preferencialmente
-com suas versões.
+| Biblioteca | Versão | Uso |
+|------------|--------|-----|
+| TensorFlow | 2.21.0 | Construção, treinamento e conversão do modelo |
+| Keras | 3.14.0 | Definição das camadas da CNN |
+| os | stdlib | Leitura do tamanho dos arquivos gerados no comparativo |
 
-
+---
 
 ### 3️⃣ Técnica de Otimização do Modelo
 
-Explique qual técnica foi utilizada para otimizar o modelo no arquivo
-`optimize_model.py`.
+Foram aplicadas e comparadas duas técnicas de quantização em `optimize_model.py`:
 
+**Técnica 1 — Dynamic Range Quantization (`model.tflite`)**
 
+Converte os pesos de float32 para int8 em tempo de conversão. As ativações são quantizadas dinamicamente durante a inferência. Não exige dataset de calibração.
+
+- Maior redução de tamanho entre as duas técnicas
+- Compatível com qualquer CPU, incluindo microcontroladores sem unidade de ponto flutuante
+- Indicada para dispositivos de baixo custo como ESP32 e STM32
+
+**Técnica 2 — Float16 Quantization (`model_float16.tflite`)**
+
+Converte os pesos de float32 para float16, mantendo ponto flutuante. Também não exige calibração.
+
+- Redução menor que a Dynamic Range, porém com maior fidelidade numérica
+- Preferível em dispositivos com acelerador dedicado float16, como Coral Edge TPU ou NVIDIA Jetson Nano
+
+**Comparativo de tamanho:**
+
+| Modelo | Tamanho | Redução |
+|--------|---------|---------|
+| model.h5 (float32 original) | 1.467,1 KB | referência |
+| model.tflite (Dynamic Range) | 128,2 KB | 91,3% |
+| model_float16.tflite (Float16) | 243,7 KB | 83,4% |
+
+A Dynamic Range Quantization foi selecionada como técnica principal por oferecer maior compressão e compatibilidade ampla com hardware embarcado de baixo custo.
+
+---
 
 ### 4️⃣ Resultados Obtidos
 
-Informe o principal resultado obtido após o treinamento do modelo.
+| Métrica | Valor |
+|---------|-------|
+| Acurácia final no conjunto de teste | 98,92% |
+| Épocas de treinamento | 5 |
+| Tamanho model.h5 | 1.467,1 KB |
+| Tamanho model.tflite (Dynamic Range) | 128,2 KB |
+| Tamanho model_float16.tflite (Float16) | 243,7 KB |
+| Redução Dynamic Range | 91,3% |
+| Redução Float16 | 83,4% |
 
+O modelo atingiu 98,92% de acurácia com 5 épocas em CPU, confirmando que a arquitetura escolhida é suficiente para o problema sem necessidade de maior complexidade.
 
+---
 
-### 5️⃣ Comentários Adicionais (Opcional)
+### 5️⃣ Comentários Adicionais
 
-Utilize este espaço para comentar:
-- Dificuldades encontradas  
-- Decisões técnicas importantes  
-- Limitações do modelo  
-- Aprendizados durante o desafio
+O desenvolvimento foi feito de forma incremental, com funções separadas e nomes claros para facilitar a leitura do código.
 
+A seed `tf.random.set_seed(42)` foi adicionada para garantir reprodutibilidade dos resultados entre execuções e ambientes distintos — decisão importante para projetos avaliados por CI automatizado.
+
+**Dificuldades encontradas:**
+
+A principal dificuldade foi a incompatibilidade entre o Keras 3.x e a API anterior: o `input_shape` diretamente na camada Conv2D gera um warning nessa versão, mas não afeta o funcionamento. Durante a execução da pipeline, também foi necessário ajustar a configuração da secret `TOKEN` no repositório para permitir a validação correta do workflow no CI.
+
+**Limitações do modelo:**
+
+O modelo foi treinado exclusivamente com o MNIST — dígitos centralizados, fundo preto e traço branco. Em imagens do mundo real com ruído, rotação ou escala diferente, o desempenho pode ser inferior. Para aplicações embarcadas reais, seria necessário um dataset mais diverso e possivelmente técnicas de data augmentation.
+
+---
 
 ## 🆘 Suporte
 
